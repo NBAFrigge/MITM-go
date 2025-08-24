@@ -79,12 +79,10 @@ export default {
       return JSON.stringify(this.path);
     },
     isExpanded() {
-      // Controlla se c'è uno stato esplicito per questo nodo
       const state = this.expandedState[this.pathKey];
       if (state !== undefined) {
         return state;
       }
-      // Altrimenti usa lo stato globale
       return this.globalExpanded;
     },
     objectKeysLength() {
@@ -98,7 +96,6 @@ export default {
       console.log('Toggling expansion for path:', this.pathKey);
       const wasExpanded = this.isExpanded;
 
-      // Assegnazione diretta - Vue 3 è reattivo per oggetti
       this.expandedState[this.pathKey] = !wasExpanded;
 
       console.log(`Node ${this.pathKey} is now ${!wasExpanded ? 'expanded' : 'collapsed'}`);

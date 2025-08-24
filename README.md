@@ -16,3 +16,12 @@ It allows developers to monitor, analyze, and troubleshoot HTTP traffic in real-
 - Confront 2 different HTTP request
 - Request replay
 - Request export as cURL
+
+## Build
+```bash
+go mod tidy
+wails build
+```
+
+## LICENSE
+This project is licensed under the MIT License
