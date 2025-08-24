@@ -20,6 +20,10 @@ It allows developers to monitor, analyze, and troubleshoot HTTP traffic in real-
 ## Build
 ```bash
 go mod tidy
+cd frontend
+npm install
+npm run build
+cd ..
 wails build
 ```
 
