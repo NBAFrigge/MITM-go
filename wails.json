@@ -1,0 +1,27 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "MITM-go",
+  "outputfilename": "MITM-go",
+  "frontend": {
+    "dir": "./frontend",
+    "install": "npm install",
+    "build": "npm run build",
+    "dev": "npm run dev",
+    "package": {
+      "manager": "npm"
+    }
+  },
+  "build": {
+    "runner": "go"
+  },
+  "author": {
+    "name": "Frigge"
+  },
+  "info": {
+    "productName": "MITM-go",
+    "productVersion": "1.0.0"
+  },
+  "nsis": {
+    "languages": ["English"]
+  }
+}

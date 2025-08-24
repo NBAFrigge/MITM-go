@@ -1,0 +1,418 @@
+/* Global CSS Variables - IntelliJ IDEA Theme */
+:root {
+    /* IntelliJ IDEA Theme Colors */
+    --bg-color-dark: #2B2B2B;           /* Editor background */
+    --bg-color-medium: #3C3F41;         /* Sidebar/panels */
+    --bg-color-light: #4C5052;          /* Selected items/hover */
+    --text-color-primary: #A9B7C6;      /* Main text */
+    --text-color-secondary: #808080;    /* Secondary text */
+    --border-color: #323232;            /* Borders */
+    --accent-color-blue: #6897BB;       /* Keywords/links */
+    --accent-color-green: #6A8759;      /* Strings/success */
+    --accent-color-yellow: #FFC66D;     /* Warnings */
+    --accent-color-red: #CC7832;        /* Errors/keywords */
+    --accent-color-purple: #9876AA;     /* Constants */
+    --hover-color: #2D2F30;             /* Hover state */
+
+    /* Additional IDEA-specific colors */
+    --selection-color: #214283;         /* Selection background */
+    --line-number-color: #606366;       /* Line numbers */
+    --comment-color: #629755;           /* Comments */
+    --string-color: #6A8759;            /* String literals */
+    --keyword-color: #CC7832;           /* Keywords */
+    --method-color: #FFC66D;            /* Method names */
+    --field-color: #9876AA;             /* Fields */
+    --number-color: #6897BB;            /* Numbers */
+
+    /* Status colors */
+    --status-success: #499C54;          /* Success/200 status */
+    --status-warning: #F0A732;          /* Warning/300 status */
+    --status-error: #F74343;            /* Error/400-500 status */
+    --status-info: #3592C4;             /* Info/redirect status */
+
+    /* Method colors (more IDEA-like) */
+    --method-get: #6897BB;              /* Blue for GET */
+    --method-post: #6A8759;             /* Green for POST */
+    --method-put: #FFC66D;              /* Yellow for PUT */
+    --method-delete: #F74343;           /* Red for DELETE */
+    --method-patch: #9876AA;            /* Purple for PATCH */
+    --method-head: #808080;             /* Gray for HEAD */
+    --method-options: #3592C4;          /* Cyan for OPTIONS */
+
+    /* UI Component colors */
+    --button-primary: #365880;          /* Primary buttons */
+    --button-secondary: #4C5052;        /* Secondary buttons */
+    --input-background: #45494A;        /* Input fields */
+    --input-border: #555555;            /* Input borders */
+    --input-focus: #466D94;             /* Input focus */
+
+    /* Scrollbar colors */
+    --scrollbar-track: #2B2B2B;
+    --scrollbar-thumb: #555555;
+    --scrollbar-thumb-hover: #666666;
+
+    /* Shadow colors */
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    --shadow-medium: rgba(0, 0, 0, 0.4);
+    --shadow-heavy: rgba(0, 0, 0, 0.6);
+
+    --font-family: 'JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
+    --font-family-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-size-small: 0.75rem;
+    --font-size-normal: 0.875rem;
+    --font-size-medium: 1rem;
+    --font-size-large: 1.125rem;
+
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.2s ease;
+    --transition-slow: 0.3s ease;
+}
+
+html, body {
+    background-color: var(--bg-color-dark);
+    color: var(--text-color-primary);
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family-ui);
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-color-primary);
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+code, pre {
+    font-family: var(--font-family);
+    background-color: var(--bg-color-light);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-small);
+}
+
+.btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: var(--font-size-normal);
+    color: var(--text-color-primary);
+    background-color: var(--button-secondary);
+    transition: var(--transition-normal);
+    font-family: var(--font-family-ui);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    text-decoration: none;
+    user-select: none;
+}
+
+.btn:hover {
+    background-color: var(--hover-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-light);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-primary {
+    background-color: var(--button-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #4A6B8A;
+}
+
+.btn-success {
+    background-color: var(--status-success);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #3A7F44;
+}
+
+.btn-danger {
+    background-color: var(--status-error);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #D32F2F;
+}
+
+.btn-warning {
+    background-color: var(--status-warning);
+    color: var(--bg-color-dark);
+}
+
+.btn-warning:hover {
+    background-color: #E09600;
+}
+
+input, select, textarea {
+    background-color: var(--input-background);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    color: var(--text-color-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-normal);
+    font-family: var(--font-family-ui);
+    transition: var(--transition-fast);
+    width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 2px rgba(70, 109, 148, 0.2);
+}
+
+input::placeholder, textarea::placeholder {
+    color: var(--text-color-secondary);
+}
+
+label {
+    color: var(--text-color-primary);
+    font-weight: 500;
+    font-size: var(--font-size-small);
+    display: block;
+    margin-bottom: var(--spacing-xs);
+}
+
+a {
+    color: var(--accent-color-blue);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+a:hover {
+    color: #8BB5D1;
+    text-decoration: underline;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+}
+
+::selection {
+    background-color: var(--selection-color);
+    color: white;
+}
+
+::-moz-selection {
+    background-color: var(--selection-color);
+    color: white;
+}
+
+*:focus {
+    outline: 2px solid var(--accent-color-blue);
+    outline-offset: 2px;
+}
+
+button:focus, input:focus, select:focus, textarea:focus {
+    outline: none;
+}
+
+.loading {
+    position: relative;
+    color: transparent;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid var(--text-color-secondary);
+    border-top-color: var(--accent-color-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.fade-in {
+    animation: fadeIn var(--transition-normal);
+}
+
+.slide-in {
+    animation: slideIn var(--transition-normal);
+}
+
+.scale-in {
+    animation: scaleIn var(--transition-normal);
+}
+
+.text-primary {
+    color: var(--text-color-primary);
+}
+
+.text-secondary {
+    color: var(--text-color-secondary);
+}
+
+.text-success {
+    color: var(--status-success);
+}
+
+.text-warning {
+    color: var(--status-warning);
+}
+
+.text-error {
+    color: var(--status-error);
+}
+
+.text-info {
+    color: var(--status-info);
+}
+
+.bg-dark {
+    background-color: var(--bg-color-dark);
+}
+
+.bg-medium {
+    background-color: var(--bg-color-medium);
+}
+
+.bg-light {
+    background-color: var(--bg-color-light);
+}
+
+.border {
+    border: 1px solid var(--border-color);
+}
+
+.border-radius {
+    border-radius: var(--radius-md);
+}
+
+.shadow {
+    box-shadow: var(--shadow-light);
+}
+
+.shadow-medium {
+    box-shadow: var(--shadow-medium);
+}
+
+.shadow-heavy {
+    box-shadow: var(--shadow-heavy);
+}
+
+@media (max-width: 768px) {
+    :root {
+        --spacing-xs: 0.2rem;
+        --spacing-sm: 0.4rem;
+        --spacing-md: 0.8rem;
+        --spacing-lg: 1.2rem;
+        --spacing-xl: 1.6rem;
+        --font-size-small: 0.7rem;
+        --font-size-normal: 0.8rem;
+        --font-size-medium: 0.9rem;
+        --font-size-large: 1rem;
+    }
+}
+
+@media print {
+    * {
+        background: white !important;
+        color: black !important;
+    }
+}
