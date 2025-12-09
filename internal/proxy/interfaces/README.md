@@ -4,5 +4,5 @@ This package defines the core interfaces used for dependency injection within th
 
 ## Interfaces
 
-* **SessionStore**: Defines methods for storing, retrieving, and searching traffic sessions (`Store`, `GetAll`, `Get`).
-* **Logger**: Defines the contract for logging request/response lifecycles and errors.
+- **SessionStore**: Defines methods for storing, retrieving, and searching traffic sessions (`Store`, `GetAll`, `Get`).
+- **Logger**: Defines the contract for logging request/response lifecycles and errors.

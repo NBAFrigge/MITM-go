@@ -1,14 +1,30 @@
 # Session Package
 
-The `session` package implements the storage layer for captured traffic.
+Implements in-memory storage for captured HTTP and WebSocket sessions and search logic.
 
-## InMemoryStore
-A concurrent-safe storage engine (`sync.RWMutex`) that keeps sessions in memory.
-* **Circular Buffer**: Implements a maximum size limit. When the limit is reached, the oldest sessions are discarded to prevent memory exhaustion.
-* **Subscription Model**: Supports a publish-subscribe pattern (`Subscribe`, `notifySubscribers`) to notify the frontend (via Wails runtime) when new data is available.
+## Public Methods
 
-## Search
-Implements the search logic for filtering sessions based on user criteria.
-* **Criteria**: URL, Header Keys/Values, Cookies Keys/Values, Body content.
-* **Matching**: Supports standard substring matching and Regex matching (if the pattern is enclosed in `/`).
-* **Logic**: Uses reflection and helper functions to inspect deeply nested session structures.
+### `InMemoryStore`
+
+- **`NewInMemoryStore(maxSize int) *InMemoryStore`**
+  Creates a store with a maximum size (circular buffer). When the limit is reached, the oldest sessions are removed.
+
+- **`Store(session *sessiondata.Session) error`**
+  Saves or updates a session. Manages concurrency via Mutex. If a new session is added that exceeds `maxSize`, it removes the oldest one. Asynchronously notifies all subscribers.
+
+- **`Get(id string) (*sessiondata.Session, error)`**
+  Retrieves a single session by ID.
+
+- **`GetAll() []*sessiondata.Session`**
+  Returns a copy of all sessions currently in memory, preserving insertion order.
+
+- **`Clear()`**
+  Completely empties the store and resets indices.
+
+- **`Subscribe(callback func())`**
+  Allows registering a callback function that will be invoked whenever a session is added or updated (used to update the UI via Wails).
+
+- **`Search(opt SearchOptions) ([]*sessiondata.Session, error)`**
+  Performs a linear search on saved sessions.
+  - `SearchOptions`: Allows filtering by URL, Header Key/Value, Cookie Key/Value, and Body content.
+  - Supports both partial matches (case-insensitive substring) and RegEx (if the string is enclosed in `/`).

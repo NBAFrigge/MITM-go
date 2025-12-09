@@ -1,19 +1,26 @@
 # Client Hello Package
 
-The `clientHello` package is responsible for analyzing raw TLS Client Hello messages. This analysis is critical for "TLS Signature Replication," allowing the proxy to impersonate the downstream client's TLS fingerprint when connecting to the upstream server.
+This package is essential for "TLS Fingerprinting" techniques. It analyzes raw bytes of the initial TLS message (`ClientHello`) to extract parameters identifying the client (browser, bot, script).
 
-## Components
+## Public Methods
 
-### ClientHelloParser
-Implements a low-level byte parser for the TLS Handshake protocol (Record Type 0x16, Handshake Type 0x01). It extracts:
-* **TLS Version**: Min and Max supported versions.
-* **Cipher Suites**: The ordered list of supported cipher suites.
-* **Extensions**: Specifically parses `SNI`, `SupportedCurves`, `SignatureAlgorithms`, `ALPN`, and `SupportedVersions`.
+### `ClientHelloParser`
 
-### ClientHelloCache
-Provides a concurrent-safe caching mechanism (`sync.RWMutex`) for `tls.Config` objects derived from Client Hello messages.
-* **Key**: A hash of the Client Hello bytes (using FNV-64a). To optimize for large payloads, a subset of the bytes is hashed.
-* **Value**: A pre-configured `crypto/tls.Config` object ready for use by the upstream client.
+- **`ParseClientHello(rawClientHello []byte) (*tls.Config, error)`**
+  Manually parses the byte slice of the TLS Handshake packet (0x16). Extracts:
+  - TLS Version (Min/Max).
+  - Supported Cipher Suites (in order).
+  - TLS Extensions, with specific focus on: SNI (Server Name Indication), Supported Elliptic Curves, Signature Algorithms, ALPN, and Supported Versions.
+  - Handles and filters GREASE values (random values reserved to test extensibility).
+    Returns a `tls.Config` that mimics the original client configuration.
 
-## Technical Details
-The parser manually decodes the variable-length vectors defined in RFC 5246 and RFC 8446. It handles GREASE (Generate Random Extensions And Sustain Extensibility) values by filtering them out during the version translation to standard Go `crypto/tls` constants.
+- **`GenerateClientHelloHash(data []byte) string`**
+  Generates a hash (FNV-64a) representative of the ClientHello. To optimize performance on large payloads, it hashes a central subsection of the bytes and the total length.
+
+### `ClientHelloCache`
+
+- **`NewClientHelloCache() *ClientHelloCache`**
+  Initializes the in-memory store for TLS configurations.
+
+- **`Get(key []byte) (*tls.Config, bool)`** / **`Set(key []byte, config *tls.Config)`**
+  Thread-safe methods to save and retrieve TLS configurations based on the raw ClientHello hash.

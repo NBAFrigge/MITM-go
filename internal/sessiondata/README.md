@@ -1,16 +1,32 @@
-# Session Data Package
+# SessionData Package
 
-This package defines the data models and business logic for captured traffic.
+Defines data models and business logic associated with a single transaction (Session).
 
-## Data Models
+## Public Methods
 
-* **Session**: The root aggregate root representing a single transaction. Contains `RequestData`, `ResponseData`, `WebSocketData`, TLS info, and timings.
-* **RequestData / ResponseData**: normalized structures containing Method, URL, Headers (`SortedMap`), Cookies, Body, and Content-Type.
-* **WebSocketData**: Contains the upgrade handshake details, connection state, and a slice of `WebSocketMessage`s.
-* **WebSocketMessage**: Represents a single WS frame (Inbound/Outbound, Opcode, Payload, Timestamp).
+### `NewSessionData`
 
-## Features
+Factory constructor that normalizes an `http.Request` and its raw bytes into a `Session` structure. Automatically determines whether to create a standard HTTP session or a WebSocket one based on Upgrade headers.
 
-* **Diff Engine**: `RequestDifferences` compares two `Session` objects and calculates field-level differences (Added/Removed/Modified headers, body changes, etc.).
-* **cURL Export**: `ToCurl` generates a valid cURL command string to replicate the captured request, preserving header order.
-* **Replay**: Logic to re-execute a captured request using the proxy's current configuration.
+### `Session` Struct Methods
+
+- **`CompareRequest(other *Session) bool`**
+  Quickly compares two sessions to verify basic equality (Method, URL, Content-Type, Body, and Headers).
+
+- **`RequestDifferences(other *Session) *RequestDifference`**
+  Performs a deep analysis (Deep Diff) between two sessions. Returns a detailed structure highlighting:
+  - Changes in scalar fields (Method, URL).
+  - Added, removed, or modified headers.
+  - Added, removed, or modified cookies.
+  - Differences in the Body.
+
+- **`ToCurl() string`**
+  Generates a valid cURL command string to reproduce the request.
+  - Uses `sortedMap` to ensure the header order in the cURL command matches exactly that of the captured request.
+  - Excludes automatic headers (like `Content-Length` or `Host`) to avoid conflicts.
+
+- **`Replay(port int) error`**
+  Re-executes the captured request through the proxy itself.
+  - If HTTPS: uses the `tls-client` library (bogdanfinn) to simulate a realistic TLS fingerprint.
+  - If HTTP: uses the standard Go client.
+  - Preserves original body, headers, and cookies.

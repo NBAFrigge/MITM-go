@@ -1,10 +1,13 @@
 # Header Parser Package
 
-The `headerParser` package provides facilities for parsing HTTP headers directly from raw byte slices.
+Utility package for low-level parsing of HTTP headers.
 
-## Purpose
-In standard Go `net/http` handling, the request body is often consumed or the headers are normalized. When hijacking a TCP connection for MITM, access to the raw header block is necessary to preserve the exact order and casing of headers before constructing the internal session representation.
+## Public Methods
 
-## Implementation
-* **ParseHeadersFromRaw**: Reads from a byte slice using `bufio.Reader`.
-* **Parsing Logic**: Iterates line-by-line until the CRLF (`\r\n`) delimiter is found. Splits lines into Key-Value pairs and stores them in a `sortedMap.SortedMap` to ensure the original header order is preserved.
+- **`ParseHeadersFromRaw(rawRequest []byte) (*sortedMap.SortedMap, error)`**
+  Reads a byte slice containing a raw HTTP request.
+  - Uses `bufio.Reader` to read line by line.
+  - Ignores the initial Request Line (Method/URL).
+  - Processes each subsequent line as a `Key: Value` pair.
+  - Stops at the empty line (`\r\n`) separating headers and body.
+  - **Important**: Saves results into a `sortedMap.SortedMap`. This is crucial because standard Go maps do not guarantee order, while header order is fundamental for fingerprinting analysis and correct request replication.

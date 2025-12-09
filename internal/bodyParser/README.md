@@ -1,20 +1,17 @@
 # Body Parser Package
 
-The `bodyParser` package provides functionality to process raw HTTP body content based on the `Content-Type` and `Content-Encoding` headers.
+Handles the transformation of request/response bodies into a readable format.
 
-## Functionality
+## Public Methods
 
-The primary entry point is the `Parse` function, which accepts the raw body string and a `BodyParserOptions` struct.
+- **`NewBodyParserOptions() BodyParserOptions`**
+  Creates an empty options structure.
 
-### Decompression
-The package supports automatic decompression of the following content encodings:
-* **gzip**: Uses `compress/gzip`.
-* **zstd**: Uses `github.com/klauspost/compress/zstd`.
-* **deflate**: Uses `compress/flate`.
+- **`PopulateFromHeaders(headers map[string][]string)`**
+  Method of the `BodyParserOptions` structure. Analyzes `Content-Type` and `Content-Encoding` headers to automatically configure the parser (e.g., detecting if content is Gzipped or JSON).
 
-### Formatting
-* **JSON**: If the content type indicates JSON (`application/json`), the payload is unmarshaled and indented using `encoding/json` to provide a human-readable string.
-
-## Structures
-
-* **BodyParserOptions**: Configures the parsing behavior, typically populated directly from HTTP headers via `PopulateFromHeaders`.
+- **`Parse(body string, options BodyParserOptions) (string, error)`**
+  Main transformation function.
+  1. **Decompression**: Supports `gzip`, `zstd` (via `klauspost/compress`), and `deflate`.
+  2. **Formatting**: If Content-Type is `application/json`, performs Unmarshal/Marshal with indentation to make JSON readable (pretty-print).
+  3. Returns the processed string.
