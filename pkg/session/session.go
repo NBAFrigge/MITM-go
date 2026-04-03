@@ -8,20 +8,22 @@ import (
 )
 
 type InMemoryStore struct {
-	sessions    map[string]*sessiondata.Session
-	order       []*sessiondata.Session
-	mutex       sync.RWMutex
-	maxSize     int
-	subscribers []func()
-	mu          sync.RWMutex
+	sessions     map[string]*sessiondata.Session
+	order        []*sessiondata.Session
+	mutex        sync.RWMutex
+	maxSize      int
+	subscribers  []func()
+	mu           sync.RWMutex
+	sessionCount int
 }
 
 func NewInMemoryStore(maxSize int) *InMemoryStore {
 	return &InMemoryStore{
-		sessions:    make(map[string]*sessiondata.Session),
-		order:       make([]*sessiondata.Session, 0),
-		maxSize:     maxSize,
-		subscribers: make([]func(), 0),
+		sessions:     make(map[string]*sessiondata.Session),
+		order:        make([]*sessiondata.Session, 0),
+		maxSize:      maxSize,
+		subscribers:  make([]func(), 0),
+		sessionCount: 0,
 	}
 }
 
@@ -57,7 +59,7 @@ func (s *InMemoryStore) Store(session *sessiondata.Session) error {
 		delete(s.sessions, oldest.ID)
 		s.order = s.order[1:]
 	}
-
+	s.sessionCount += 1
 	go s.notifySubscribers()
 	return nil
 }
@@ -88,4 +90,8 @@ func (s *InMemoryStore) Clear() {
 	s.sessions = make(map[string]*sessiondata.Session)
 	s.order = make([]*sessiondata.Session, 0)
 	go s.notifySubscribers()
+}
+
+func (s *InMemoryStore) SessionCount() int {
+	return s.sessionCount
 }

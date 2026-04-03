@@ -20,6 +20,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type TickMsg struct{}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -54,6 +56,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case SessionsUpdatedMsg:
 		m.sessions = msg.Sessions
+		m.sessionCount = len(msg.Sessions)
 		m.applyFilter()
 
 		if m.showDetails && m.selectedSession != nil {
@@ -102,6 +105,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, clearStatusCmd()
+
+	case TickMsg:
+		return m, m.tickCmd()
 
 	case tea.KeyMsg:
 		switch {
@@ -377,35 +383,38 @@ func (m *Model) updatePanelSizes() {
 func (m *Model) applyFilter() {
 	if m.filterRegex == "" {
 		m.errorMsg = ""
+		m.compiledFilter = nil
 		m.sessionsPanel.UpdateSessions(m.sessions)
 		return
 	}
 
-	re, err := regexp.Compile(m.filterRegex)
-	if err != nil {
-		m.errorMsg = "Invalid Regex: " + err.Error()
-		m.sessionsPanel.UpdateSessions(m.sessions)
-		return
+	if m.compiledFilter == nil || m.compiledFilter.String() != m.filterRegex {
+		re, err := regexp.Compile(m.filterRegex)
+		if err != nil {
+			m.errorMsg = "Invalid Regex: " + err.Error()
+			m.compiledFilter = nil
+			m.sessionsPanel.UpdateSessions(m.sessions)
+			return
+		}
+		m.compiledFilter = re
 	}
 
 	m.errorMsg = ""
-
 	var filtered []*sessiondata.Session
 	for _, s := range m.sessions {
-		if re.MatchString(s.Request.URL) {
+		if m.compiledFilter.MatchString(s.Request.URL) {
 			filtered = append(filtered, s)
 		}
 	}
-
 	m.sessionsPanel.UpdateSessions(filtered)
 }
 
 func (m *Model) tickCmd() tea.Cmd {
 	return tea.Tick(time.Second*2, func(t time.Time) tea.Msg {
-		if m.sessionStore != nil {
+		if m.sessionStore != nil && m.sessionStore.SessionCount() != m.sessionCount {
 			return SessionsUpdatedMsg{Sessions: m.sessionStore.GetAll()}
 		}
-		return nil
+		return TickMsg{}
 	})
 }
 

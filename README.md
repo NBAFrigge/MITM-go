@@ -13,7 +13,6 @@ Terminal-based HTTP/HTTPS debugging proxy built in Go. Intercepts, inspects, and
 - **Request Replay** — Re-send captured requests through the proxy
 - **cURL Export** — Copy any session as a cURL command
 - **Regex Filtering** — Filter sessions by URL pattern
-- **Interactive TUI** — Navigable panels for sessions, request/response details, and TLS data
 
 ## Requirements
 
