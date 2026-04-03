@@ -81,6 +81,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ProxyStatusMsg:
 		m.isRunning = msg.Running
+		if !msg.Running {
+			m.server = nil
+		}
 		if msg.Error != nil {
 			m.errorMsg = msg.Error.Error()
 		} else {
@@ -419,52 +422,59 @@ func (m *Model) tickCmd() tea.Cmd {
 }
 
 func (m *Model) toggleProxyCmd() tea.Cmd {
-	return tea.Cmd(func() tea.Msg {
-		if m.isRunning {
-			if m.server != nil {
+	if m.isRunning {
+		server := m.server
+		return func() tea.Msg {
+			if server != nil {
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
-				if err := m.server.Shutdown(ctx); err != nil {
+				if err := server.Shutdown(ctx); err != nil {
 					return ProxyStatusMsg{Running: true, Error: err}
 				}
-				m.server = nil
 			}
 			return ProxyStatusMsg{Running: false, Error: nil}
-		} else {
-			if m.proxy == nil {
-				if err := os.MkdirAll("certs", 0o755); err != nil {
-					return ProxyStatusMsg{Running: false, Error: fmt.Errorf("failed to create certs dir: %v", err)}
-				}
-
-				caCache := certs.NewCertCache()
-
-				err := caCache.LoadOrGenerateCA("certs", "certs/httpCA.crt", "certs/httpCA.key")
-				if err != nil {
-					return ProxyStatusMsg{Running: false, Error: fmt.Errorf("CA error: %v", err)}
-				}
-
-				m.proxy = proxy.NewProxy(m.sessionStore, m.logger, caCache)
-			}
-			m.server = &http.Server{
-				Addr:     fmt.Sprintf(":%d", m.port),
-				Handler:  m.proxy,
-				ErrorLog: log.New(io.Discard, "", 0),
-			}
-			go func() {
-				if m.logger != nil {
-					m.logger.LogInfo(fmt.Sprintf("Proxy listening on http://127.0.0.1:%d", m.port))
-					m.logger.LogInfo("Configure your client to use this proxy for HTTP and HTTPS requests")
-					m.logger.LogInfo(fmt.Sprintf("Log file: %s", m.logger.GetLogFilePath()))
-				}
-				if err := m.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					if m.logger != nil {
-						m.logger.LogError(err, "Server error")
-					}
-				}
-			}()
-			return ProxyStatusMsg{Running: true, Error: nil}
 		}
-	})
+	}
+
+	if m.proxy == nil {
+		if err := os.MkdirAll("certs", 0o755); err != nil {
+			m.errorMsg = fmt.Sprintf("Failed to create certs dir: %v", err)
+			return nil
+		}
+
+		caCache := certs.NewCertCache()
+		err := caCache.LoadOrGenerateCA("certs", "certs/httpCA.crt", "certs/httpCA.key")
+		if err != nil {
+			m.errorMsg = fmt.Sprintf("CA error: %v", err)
+			return nil
+		}
+
+		m.proxy = proxy.NewProxy(m.sessionStore, m.logger, caCache)
+	}
+
+	m.server = &http.Server{
+		Addr:     fmt.Sprintf(":%d", m.port),
+		Handler:  m.proxy,
+		ErrorLog: log.New(io.Discard, "", 0),
+	}
+
+	server := m.server
+	logger := m.logger
+	port := m.port
+
+	return func() tea.Msg {
+		if logger != nil {
+			logger.LogInfo(fmt.Sprintf("Proxy listening on http://127.0.0.1:%d", port))
+		}
+		go func() {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				if logger != nil {
+					logger.LogError(err, "Server error")
+				}
+			}
+		}()
+		return ProxyStatusMsg{Running: true, Error: nil}
+	}
 }
 
 func (m *Model) refreshSessionsCmd() tea.Cmd {
