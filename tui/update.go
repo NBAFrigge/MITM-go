@@ -63,15 +63,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for _, session := range m.sessions {
 				if session.ID == m.selectedSession.ID {
 					m.selectedSession = session
-					if session.Type == sessiondata.WebSocketSession {
-						m.websocketPanel.UpdateSession(session)
-					} else {
-						m.requestPanel.UpdateSession(session)
-						m.responsePanel.UpdateSession(session)
-						if m.tlsPanel != nil {
-							m.tlsPanel.UpdateSession(session)
-						}
-					}
+					m.updatePanelsForSession(session)
 					break
 				}
 			}
@@ -222,67 +214,50 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.logger.verbose = m.verbose
 			}
 		}
+	}
 
-		switch m.activePanel {
-		case SessionPanel:
-			cmd := m.sessionsPanel.Update(msg)
-			cmds = append(cmds, cmd)
-		default:
-			if m.selectedSession != nil && m.selectedSession.Type == sessiondata.WebSocketSession {
-				cmd := m.websocketPanel.Update(msg)
-				cmds = append(cmds, cmd)
-			} else {
-				switch m.activeTab {
-				case 0:
-					cmd := m.requestPanel.Update(msg)
-					cmds = append(cmds, cmd)
-				case 1:
-					cmd := m.responsePanel.Update(msg)
-					cmds = append(cmds, cmd)
-				case 2:
-					if m.tlsPanel != nil {
-						cmd := m.tlsPanel.Update(msg)
-						cmds = append(cmds, cmd)
-					}
-				}
-			}
-		}
+	cmds = append(cmds, m.propagateToActivePanel(msg))
+	return m, tea.Batch(cmds...)
+}
 
+func (m *Model) propagateToActivePanel(msg tea.Msg) tea.Cmd {
+	switch m.activePanel {
+	case SessionPanel:
+		return m.sessionsPanel.Update(msg)
 	default:
-		switch m.activePanel {
-		case SessionPanel:
-			cmd := m.sessionsPanel.Update(msg)
-			cmds = append(cmds, cmd)
-		default:
-			if m.selectedSession != nil && m.selectedSession.Type == sessiondata.WebSocketSession {
-				cmd := m.websocketPanel.Update(msg)
-				cmds = append(cmds, cmd)
-			} else {
-				switch m.activeTab {
-				case 0:
-					cmd := m.requestPanel.Update(msg)
-					cmds = append(cmds, cmd)
-				case 1:
-					cmd := m.responsePanel.Update(msg)
-					cmds = append(cmds, cmd)
-				case 2:
-					if m.tlsPanel != nil {
-						cmd := m.tlsPanel.Update(msg)
-						cmds = append(cmds, cmd)
-					}
-				}
+		if m.selectedSession != nil && m.selectedSession.Type == sessiondata.WebSocketSession {
+			return m.websocketPanel.Update(msg)
+		}
+		switch m.activeTab {
+		case 0:
+			return m.requestPanel.Update(msg)
+		case 1:
+			return m.responsePanel.Update(msg)
+		case 2:
+			if m.tlsPanel != nil {
+				return m.tlsPanel.Update(msg)
 			}
 		}
 	}
+	return nil
+}
 
-	return m, tea.Batch(cmds...)
+func (m *Model) updatePanelsForSession(session *sessiondata.Session) {
+	if session.Type == sessiondata.WebSocketSession {
+		m.websocketPanel.UpdateSession(session)
+	} else {
+		m.requestPanel.UpdateSession(session)
+		m.responsePanel.UpdateSession(session)
+	}
+	if m.tlsPanel != nil {
+		m.tlsPanel.UpdateSession(session)
+	}
 }
 
 func (m *Model) switchPanel() {
 	if !m.showDetails {
 		return
 	}
-
 	if m.activePanel == SessionPanel {
 		m.activePanel = RequestPanel
 	} else {
@@ -290,25 +265,18 @@ func (m *Model) switchPanel() {
 	}
 }
 
-func (m *Model) switchPanelReverse() {
-	m.switchPanel()
-}
-
 func (m *Model) updateSelectedSession() {
-	if session := m.sessionsPanel.GetSelectedSession(); session != nil {
-		m.selectedSession = session
-		if m.selectedSession.Type == sessiondata.HTTPSession {
-			m.requestPanel.UpdateSession(session)
-			m.responsePanel.UpdateSession(session)
-			if m.tlsPanel != nil {
-				m.tlsPanel.UpdateSession(session)
-			}
-			m.statusMsg = fmt.Sprintf("Selected session: %s %s", session.Request.Method, session.Request.URL)
-		} else if m.selectedSession.Type == sessiondata.WebSocketSession {
-			m.websocketPanel.UpdateSession(session)
-			m.statusMsg = fmt.Sprintf("Selected WebSocket: %s (%d messages)",
-				session.Request.URL, session.WebSocket.MessageCount)
-		}
+	session := m.sessionsPanel.GetSelectedSession()
+	if session == nil {
+		return
+	}
+	m.selectedSession = session
+	m.updatePanelsForSession(session)
+	if session.Type == sessiondata.WebSocketSession {
+		m.statusMsg = fmt.Sprintf("Selected WebSocket: %s (%d messages)",
+			session.Request.URL, session.WebSocket.MessageCount)
+	} else {
+		m.statusMsg = fmt.Sprintf("Selected session: %s %s", session.Request.Method, session.Request.URL)
 	}
 }
 

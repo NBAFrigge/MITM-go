@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"httpDebugger/pkg/sessiondata"
+	"httpDebugger/tui/helpers"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -12,27 +13,6 @@ var (
 	TabStyle       = lipgloss.NewStyle().Padding(0, 1).Foreground(lipgloss.Color("240"))
 	ActiveTabStyle = lipgloss.NewStyle().Padding(0, 1).Foreground(lipgloss.Color("63")).Bold(true).Underline(true)
 )
-
-func safe(v int) int {
-	if v < 0 {
-		return 0
-	}
-	return v
-}
-
-func truncate(s string, w int) string {
-	if w <= 0 {
-		return ""
-	}
-	runes := []rune(s)
-	if len(runes) > w {
-		if w > 3 {
-			return string(runes[:w-3]) + "..."
-		}
-		return string(runes[:w])
-	}
-	return s
-}
 
 func (m *Model) View() string {
 	if m.width == 0 {
@@ -54,13 +34,13 @@ func (m *Model) View() string {
 		detailsW = availW - sessionW
 	}
 
-	sessionStyle := InactiveStyle.Copy().Width(safe(sessionW - 2)).Height(safe(availH - 2))
-	detailStyle := InactiveStyle.Copy().Width(safe(detailsW - 2)).Height(safe(availH - 2))
+	sessionStyle := InactiveStyle.Copy().Width(helpers.SafeInt(sessionW - 2)).Height(helpers.SafeInt(availH - 2))
+	detailStyle := InactiveStyle.Copy().Width(helpers.SafeInt(detailsW - 2)).Height(helpers.SafeInt(availH - 2))
 
 	if m.activePanel == SessionPanel {
-		sessionStyle = ActiveStyle.Copy().Width(safe(sessionW - 2)).Height(safe(availH - 2))
+		sessionStyle = ActiveStyle.Copy().Width(helpers.SafeInt(sessionW - 2)).Height(helpers.SafeInt(availH - 2))
 	} else {
-		detailStyle = ActiveStyle.Copy().Width(safe(detailsW - 2)).Height(safe(availH - 2))
+		detailStyle = ActiveStyle.Copy().Width(helpers.SafeInt(detailsW - 2)).Height(helpers.SafeInt(availH - 2))
 	}
 
 	sessionsContent := sessionStyle.Render(
@@ -142,52 +122,49 @@ func (m *Model) renderStatusBar() string {
 	if m.isSearching {
 		return StatusActiveStyle.Render(m.searchInput.View())
 	}
-	var status string
-	if m.isRunning {
-		status = fmt.Sprintf("Proxy running on port %d", m.port)
-	} else {
-		status = "Proxy stopped"
+
+	left := "● Proxy running"
+	leftStyle := StatusActiveStyle
+	if !m.isRunning {
+		left = "○ Proxy stopped"
+		leftStyle = StatusInactiveStyle
 	}
-	if m.statusMsg != "" {
-		status += " | " + m.statusMsg
-	}
+
+	var right string
 	if m.errorMsg != "" {
-		status += " | ERROR: " + m.errorMsg
-	}
-	if m.selectedSession != nil {
-		status += fmt.Sprintf(" | Selected: %s", m.selectedSession.ID[:8])
-	}
-	if m.verbose {
-		status += " | VERBOSE"
+		right = "ERR: " + m.errorMsg
+	} else if m.statusMsg != "" {
+		right = m.statusMsg
 	}
 
 	if m.filterRegex != "" {
-		status += fmt.Sprintf(" | FILTER: /%s/", m.filterRegex)
+		if right != "" {
+			right += " "
+		}
+		right += fmt.Sprintf("/%s/", m.filterRegex)
 	}
 
-	status = truncate(status, m.width-1)
-
-	if m.isRunning {
-		return StatusActiveStyle.Render(status)
+	maxRight := m.width - len(left) - 4
+	if maxRight > 0 && len(right) > maxRight {
+		right = helpers.TruncateString(right, maxRight)
 	}
-	return StatusInactiveStyle.Render(status)
+
+	if right != "" {
+		return leftStyle.Render(left) + "  " + HelpStyle.Render(right)
+	}
+	return leftStyle.Render(left)
 }
 
 func (m *Model) renderHelpBar() string {
-	help := "Tab: focus panels • Enter: toggle details • Ctrl+S: proxy • Ctrl+R: refresh • Ctrl+D: clear • Q: quit"
-	if m.activePanel == SessionPanel {
-		help = "↑↓: navigate • " + help
-	} else {
-		help = "↑↓: scroll • ←→: switch tabs • " + help
-	}
-
-	help = truncate(help, m.width-1)
+	help := "Tab: panels • Enter: details • Ctrl+S: proxy • /: filter • r: replay • c: curl • q: quit"
+	help = helpers.TruncateString(help, m.width-1)
 	return HelpStyle.Render(help)
 }
 
 func (m *Model) renderHelpScreen() string {
 	helpContent := `
 HTTP Debugger - Help
+
 GLOBAL COMMANDS:
   Tab               Toggle focus (Left/Right)
   Enter             Select session (in Sessions panel)
@@ -196,8 +173,12 @@ GLOBAL COMMANDS:
   Ctrl+D            Clear all sessions
   Ctrl+C / Q        Quit application
   Escape            Reset selection
+  /                 Search (regex filter by URL)
+  r                 Replay selected request
+  c                 Copy as cURL
   F1                Toggle this help
   F2                Toggle verbose logging
+
 DETAILS PANEL:
   ↑↓                Scroll through content
   ←→                Switch Tab (Req/Res/TLS)

@@ -330,3 +330,10 @@ func CreateLoadingSpinner(frame int) string {
 	spinners := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	return spinners[frame%len(spinners)]
 }
+
+func SafeInt(v int) int {
+	if v < 0 {
+		return 0
+	}
+	return v
+}
