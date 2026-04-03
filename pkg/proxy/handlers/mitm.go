@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -199,7 +200,6 @@ func (h *MITMHandler) handleTLSHTTP1(clientConn *tls.Conn, originalHost string, 
 
 		// Create session data with TLS fingerprint
 		session := sessiondata.NewSessionData(req, bodyBytes, headers, fingerprint, sessiondata.HTTP11Protocol)
-		session.TLSFingerprint = fingerprint
 
 		// Handle based on session type
 		switch session.Type {
@@ -221,12 +221,13 @@ func (h *MITMHandler) handleTLSHTTP2(clientConn *tls.Conn, originalHost string, 
 	wrappedConn := connections.NewHTTP2FrameWrapper(clientConn, h.config.Logger)
 	defer wrappedConn.Close()
 
-	// Map to store headers for each stream
-	streamHeaders := make(map[uint32]*sortedMap.SortedMap)
+	var streamMu sync.Mutex
+	var streamOrder []*sortedMap.SortedMap
 
-	// Set callback to capture headers
 	wrappedConn.SetHeadersCallback(func(streamID uint32, headers *sortedMap.SortedMap) {
-		streamHeaders[streamID] = headers
+		streamMu.Lock()
+		defer streamMu.Unlock()
+		streamOrder = append(streamOrder, headers)
 	})
 
 	// Initialize HTTP/2 server
@@ -241,27 +242,26 @@ func (h *MITMHandler) handleTLSHTTP2(clientConn *tls.Conn, originalHost string, 
 	http2Server.ServeConn(wrappedConn, &http2.ServeConnOpts{
 		// Custom handler to process each request
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// Update request URL and Host
 			req.URL.Scheme = HTTPSScheme
 			req.URL.Host = originalHost
 			if req.Host == "" {
 				req.Host = originalHost
 			}
 
-			// Retrieve captured headers for the stream
-			rawHeaders := sortedMap.New()
-			streamID := h.extractStreamID(req)
-			if capturedHeaders, exists := streamHeaders[streamID]; exists {
-				rawHeaders = capturedHeaders
-				delete(streamHeaders, streamID)
-			} else {
+			var rawHeaders *sortedMap.SortedMap
+			streamMu.Lock()
+			if len(streamOrder) > 0 {
+				rawHeaders = streamOrder[0]
+				streamOrder = streamOrder[1:]
+			}
+			streamMu.Unlock()
+
+			if rawHeaders == nil {
 				rawHeaders = sortedMap.New()
 				for key, value := range req.Header {
 					rawHeaders.Put(key, value)
 				}
-			}
-
-			// Get the full request body
+			} // Get the full request body
 			bodyBytes, err := io.ReadAll(req.Body)
 			if err != nil {
 				h.config.Logger.LogError(err, "reading HTTPS request body")
@@ -272,7 +272,6 @@ func (h *MITMHandler) handleTLSHTTP2(clientConn *tls.Conn, originalHost string, 
 
 			// Create session data with TLS fingerprint
 			session := sessiondata.NewSessionData(req, bodyBytes, rawHeaders, fingerprint, sessiondata.HTTP2Protocol)
-			session.TLSFingerprint = fingerprint
 
 			// Handle based on session type
 			switch session.Type {
@@ -291,14 +290,4 @@ func (h *MITMHandler) handleTLSHTTP2(clientConn *tls.Conn, originalHost string, 
 			WriteTimeout: ConnectionTimeoutSeconds * time.Second,
 		},
 	})
-}
-
-// extractStreamID generates a pseudo stream ID based on request path and method
-func (h *MITMHandler) extractStreamID(req *http.Request) uint32 {
-	hash := uint32(0)
-	path := req.URL.Path + req.Method
-	for _, b := range []byte(path) {
-		hash = hash*31 + uint32(b)
-	}
-	return hash & 0x7fffffff
 }
