@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"reflect"
 
 	"httpDebugger/pkg/sessiondata"
 )
@@ -10,14 +9,14 @@ import (
 type SearchOptions struct {
 	URL        string
 	HeadersKey string
-	HeadersVal interface{}
+	HeadersVal string
 	CookiesKey string
-	CookiesVal interface{}
+	CookiesVal string
 	Body       string
 }
 
 func (s *InMemoryStore) Search(opt SearchOptions) ([]*sessiondata.Session, error) {
-	if opt.URL == "" && opt.HeadersKey == "" && opt.HeadersVal == nil && opt.CookiesKey == "" && opt.CookiesVal == nil && opt.Body == "" {
+	if opt.URL == "" && opt.HeadersKey == "" && opt.HeadersVal == "" && opt.CookiesKey == "" && opt.CookiesVal == "" && opt.Body == "" {
 		return nil, fmt.Errorf("no search criteria provided")
 	}
 
@@ -26,38 +25,37 @@ func (s *InMemoryStore) Search(opt SearchOptions) ([]*sessiondata.Session, error
 
 	var results []*sessiondata.Session
 	for _, session := range s.order {
-		fmt.Printf("search session %s\n", session.Request.URL)
-		if s.CheckIfMatch(session, opt) {
+		if s.checkIfMatch(session, opt) {
 			results = append(results, session)
 		}
 	}
 
-	fmt.Printf("%+v\n", results)
-
 	return results, nil
 }
 
-func (s *InMemoryStore) CheckIfMatch(ses *sessiondata.Session, opt SearchOptions) bool {
+func (s *InMemoryStore) checkIfMatch(ses *sessiondata.Session, opt SearchOptions) bool {
 	if opt.URL != "" {
 		if !matchString(ses.Request.URL, opt.URL) {
 			return false
 		}
 	}
 
-	if opt.HeadersKey != "" || opt.HeadersVal != nil {
+	if opt.HeadersKey != "" || opt.HeadersVal != "" {
 		if !s.checkHeaders(ses, opt) {
 			return false
 		}
 	}
 
-	if opt.CookiesKey != "" || !reflect.ValueOf(opt.CookiesVal).IsZero() {
+	if opt.CookiesKey != "" || opt.CookiesVal != "" {
 		if !s.checkCookies(ses, opt) {
 			return false
 		}
 	}
 
 	if opt.Body != "" {
-		if !matchString(ses.Request.Body, opt.Body) && !matchString(ses.Response.Body, opt.Body) {
+		reqMatch := matchString(ses.Request.Body, opt.Body)
+		respMatch := ses.Response != nil && matchString(ses.Response.Body, opt.Body)
+		if !reqMatch && !respMatch {
 			return false
 		}
 	}
@@ -67,18 +65,16 @@ func (s *InMemoryStore) CheckIfMatch(ses *sessiondata.Session, opt SearchOptions
 
 func (s *InMemoryStore) checkHeaders(ses *sessiondata.Session, opt SearchOptions) bool {
 	foundKey := opt.HeadersKey == ""
-	foundVal := opt.HeadersVal == nil
-
-	valStr := toString(opt.HeadersVal)
+	foundVal := opt.HeadersVal == ""
 
 	for key, val := range ses.Request.Headers.Entries {
 		if !foundKey && opt.HeadersKey != "" && matchString(key, opt.HeadersKey) {
 			foundKey = true
 		}
 
-		if !foundVal && opt.HeadersVal != nil {
-			strval := toString(val)
-			if matchString(strval, valStr) {
+		if !foundVal && opt.HeadersVal != "" {
+			strval := fmt.Sprintf("%v", val)
+			if matchString(strval, opt.HeadersVal) {
 				foundVal = true
 			}
 		}
@@ -93,18 +89,15 @@ func (s *InMemoryStore) checkHeaders(ses *sessiondata.Session, opt SearchOptions
 
 func (s *InMemoryStore) checkCookies(ses *sessiondata.Session, opt SearchOptions) bool {
 	foundKey := opt.CookiesKey == ""
-	foundVal := opt.CookiesVal == nil
-
-	valStr := toString(opt.CookiesVal)
+	foundVal := opt.CookiesVal == ""
 
 	for key, val := range ses.Request.Cookies {
 		if !foundKey && opt.CookiesKey != "" && matchString(key, opt.CookiesKey) {
 			foundKey = true
 		}
 
-		if !foundVal && opt.CookiesVal != nil {
-			cookieVal := toString(val)
-			if matchString(cookieVal, valStr) {
+		if !foundVal && opt.CookiesVal != "" {
+			if matchString(val, opt.CookiesVal) {
 				foundVal = true
 			}
 		}
@@ -115,14 +108,4 @@ func (s *InMemoryStore) checkCookies(ses *sessiondata.Session, opt SearchOptions
 	}
 
 	return foundKey && foundVal
-}
-
-func toString(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return fmt.Sprintf("%v", v)
 }

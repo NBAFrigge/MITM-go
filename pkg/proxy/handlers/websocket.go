@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"httpDebugger/pkg/certs"
+	"httpDebugger/pkg/sortedMap"
 
 	"httpDebugger/pkg/proxy/types"
 	"httpDebugger/pkg/sessiondata"
@@ -363,8 +364,14 @@ func (h *WebSocketHandler) addMessageToSession(session *sessiondata.Session, msg
 
 // extractResponseData extracts basic response data for WebSocket upgrade responses
 func (h *WebSocketHandler) extractResponseData(resp *http.Response) *sessiondata.ResponseData {
+	headers := sortedMap.New()
+	for k, v := range resp.Header {
+		headers.Put(k, v)
+	}
+
 	return &sessiondata.ResponseData{
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
+		Headers:    headers,
 	}
 }

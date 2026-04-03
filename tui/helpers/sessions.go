@@ -137,17 +137,20 @@ func matchesQuery(session *sessiondata.Session, query string) bool {
 		return true
 	}
 
-	for name, value := range session.Request.Headers.Entries {
-		if strings.Contains(strings.ToLower(name), query) {
-			return true
-		}
-		if strings.Contains(strings.ToLower(value.(string)), query) {
-			return true
+	if session.Request.Headers != nil {
+		for name, value := range session.Request.Headers.Entries {
+			if strings.Contains(strings.ToLower(name), query) {
+				return true
+			}
+			valStr := fmt.Sprintf("%v", value)
+			if strings.Contains(strings.ToLower(valStr), query) {
+				return true
+			}
 		}
 	}
 
-	if len(session.Request.Body) > 0 && isPrintable(string(session.Request.Body)) {
-		if strings.Contains(strings.ToLower(string(session.Request.Body)), query) {
+	if len(session.Request.Body) > 0 && isPrintable(session.Request.Body) {
+		if strings.Contains(strings.ToLower(session.Request.Body), query) {
 			return true
 		}
 	}
@@ -157,12 +160,15 @@ func matchesQuery(session *sessiondata.Session, query string) bool {
 			return true
 		}
 
-		for name, value := range session.Response.Headers.Entries {
-			if strings.Contains(strings.ToLower(name), query) {
-				return true
-			}
-			if strings.Contains(strings.ToLower(value.(string)), query) {
-				return true
+		if session.Response.Headers != nil {
+			for name, value := range session.Response.Headers.Entries {
+				if strings.Contains(strings.ToLower(name), query) {
+					return true
+				}
+				valStr := fmt.Sprintf("%v", value)
+				if strings.Contains(strings.ToLower(valStr), query) {
+					return true
+				}
 			}
 		}
 	}
@@ -207,26 +213,26 @@ func GroupSessionsByHost(sessions []*sessiondata.Session) map[string][]*sessiond
 	return groups
 }
 
-func extractHost(url string) string {
-	if strings.HasPrefix(url, "https://") {
-		url = strings.TrimPrefix(url, "https://")
-	} else if strings.HasPrefix(url, "http://") {
-		url = strings.TrimPrefix(url, "http://")
+func extractHost(rawURL string) string {
+	if strings.HasPrefix(rawURL, "https://") {
+		rawURL = strings.TrimPrefix(rawURL, "https://")
+	} else if strings.HasPrefix(rawURL, "http://") {
+		rawURL = strings.TrimPrefix(rawURL, "http://")
 	}
 
-	if idx := strings.Index(url, "/"); idx != -1 {
-		url = url[:idx]
+	if idx := strings.Index(rawURL, "/"); idx != -1 {
+		rawURL = rawURL[:idx]
 	}
 
-	if idx := strings.Index(url, ":"); idx != -1 {
-		url = url[:idx]
+	if idx := strings.Index(rawURL, ":"); idx != -1 {
+		rawURL = rawURL[:idx]
 	}
 
-	if url == "" {
+	if rawURL == "" {
 		return "unknown"
 	}
 
-	return url
+	return rawURL
 }
 
 func GetSessionByID(sessions []*sessiondata.Session, id string) *sessiondata.Session {

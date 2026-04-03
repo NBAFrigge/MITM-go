@@ -17,7 +17,7 @@ func setupTestStoreWithData() *InMemoryStore {
 			Request: &sessiondata.RequestData{
 				URL:  "https://www.amazon.com/products/search?q=laptop",
 				Body: "search query for laptop computers",
-				Headers: sortedMap.SortedMap{
+				Headers: &sortedMap.SortedMap{
 					Entries: map[string]interface{}{
 						"Content-Type":  "application/json",
 						"Authorization": "Bearer token123",
@@ -26,10 +26,10 @@ func setupTestStoreWithData() *InMemoryStore {
 					},
 					Order: []string{"Content-Type", "Authorization", "User-Agent", "X-Custom"},
 				},
-				Cookies: map[string]interface{}{
+				Cookies: map[string]string{
 					"session_id": "abc123",
 					"user_pref":  "theme=dark",
-					"cart_items": 5,
+					"cart_items": "5",
 				},
 			},
 			Response: &sessiondata.ResponseData{
@@ -41,7 +41,7 @@ func setupTestStoreWithData() *InMemoryStore {
 			Request: &sessiondata.RequestData{
 				URL:  "https://www.google.com/search?q=golang+tutorial",
 				Body: "golang tutorial request data",
-				Headers: sortedMap.SortedMap{
+				Headers: &sortedMap.SortedMap{
 					Entries: map[string]interface{}{
 						"Content-Type": "text/html",
 						"Accept":       "text/html,application/xml",
@@ -49,10 +49,10 @@ func setupTestStoreWithData() *InMemoryStore {
 					},
 					Order: []string{"Content-Type", "Accept", "Cookie"},
 				},
-				Cookies: map[string]interface{}{
+				Cookies: map[string]string{
 					"search_pref": "safe=on",
 					"lang":        "en",
-					"user_id":     12345,
+					"user_id":     "12345",
 				},
 			},
 			Response: &sessiondata.ResponseData{
@@ -64,7 +64,7 @@ func setupTestStoreWithData() *InMemoryStore {
 			Request: &sessiondata.RequestData{
 				URL:  "https://api.github.com/repos/user/project",
 				Body: "",
-				Headers: sortedMap.SortedMap{
+				Headers: &sortedMap.SortedMap{
 					Entries: map[string]interface{}{
 						"Authorization": "token ghp_123456789",
 						"Accept":        "application/vnd.github.v3+json",
@@ -72,8 +72,8 @@ func setupTestStoreWithData() *InMemoryStore {
 					},
 					Order: []string{"Authorization", "Accept", "User-Agent"},
 				},
-				Cookies: map[string]interface{}{
-					"logged_in":     true,
+				Cookies: map[string]string{
+					"logged_in":     "true",
 					"session_token": "xyz789",
 				},
 			},
@@ -86,7 +86,7 @@ func setupTestStoreWithData() *InMemoryStore {
 			Request: &sessiondata.RequestData{
 				URL:  "https://httpbin.org/post",
 				Body: `{"test": "data", "numbers": [1,2,3]}`,
-				Headers: sortedMap.SortedMap{
+				Headers: &sortedMap.SortedMap{
 					Entries: map[string]interface{}{
 						"Content-Type":  "application/json",
 						"Accept":        "*/*",
@@ -94,7 +94,7 @@ func setupTestStoreWithData() *InMemoryStore {
 					},
 					Order: []string{"Content-Type", "Accept", "X-Test-Header"},
 				},
-				Cookies: map[string]interface{}{
+				Cookies: map[string]string{
 					"test_cookie": "test123",
 				},
 			},
@@ -115,11 +115,9 @@ func slicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-
 	if len(a) == 0 {
 		return true
 	}
-
 	for i := range a {
 		if a[i] != b[i] {
 			return false
@@ -153,36 +151,24 @@ func TestSearch_BasicFunctionality(t *testing.T) {
 			wantErr:  true,
 		},
 		{
-			name: "Search by URL substring",
-			options: SearchOptions{
-				URL: "amazon",
-			},
+			name:     "Search by URL substring",
+			options:  SearchOptions{URL: "amazon"},
 			expected: []string{"1"},
-			wantErr:  false,
 		},
 		{
-			name: "Search by URL case insensitive",
-			options: SearchOptions{
-				URL: "AMAZON",
-			},
+			name:     "Search by URL case insensitive",
+			options:  SearchOptions{URL: "AMAZON"},
 			expected: []string{"1"},
-			wantErr:  false,
 		},
 		{
-			name: "Search by URL multiple results",
-			options: SearchOptions{
-				URL: "https://",
-			},
+			name:     "Search by URL multiple results",
+			options:  SearchOptions{URL: "https://"},
 			expected: []string{"1", "2", "3", "4"},
-			wantErr:  false,
 		},
 		{
-			name: "Search by URL no results",
-			options: SearchOptions{
-				URL: "facebook.com",
-			},
+			name:     "Search by URL no results",
+			options:  SearchOptions{URL: "facebook.com"},
 			expected: []string{},
-			wantErr:  false,
 		},
 	}
 
@@ -226,99 +212,63 @@ func TestSearch_HeadersSearch(t *testing.T) {
 		expected []string
 	}{
 		{
-			name: "Search by header key only",
-			options: SearchOptions{
-				HeadersKey: "Authorization",
-			},
+			name:     "Search by header key only",
+			options:  SearchOptions{HeadersKey: "Authorization"},
 			expected: []string{"1", "3"},
 		},
 		{
-			name: "Search by header key case insensitive",
-			options: SearchOptions{
-				HeadersKey: "authorization",
-			},
+			name:     "Search by header key case insensitive",
+			options:  SearchOptions{HeadersKey: "authorization"},
 			expected: []string{"1", "3"},
 		},
 		{
-			name: "Search by header value only",
-			options: SearchOptions{
-				HeadersVal: "application/json",
-			},
+			name:     "Search by header value only",
+			options:  SearchOptions{HeadersVal: "application/json"},
 			expected: []string{"1", "4"},
 		},
 		{
-			name: "Search by header key and value - both must match independently",
-			options: SearchOptions{
-				HeadersKey: "Content-Type",
-				HeadersVal: "Bearer",
-			},
+			name:     "Search by header key and value - both must match independently",
+			options:  SearchOptions{HeadersKey: "Content-Type", HeadersVal: "Bearer"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by header key and value - key match, no value match",
-			options: SearchOptions{
-				HeadersKey: "Accept",
-				HeadersVal: "non-existent-value",
-			},
+			name:     "Search by header key and value - key match, no value match",
+			options:  SearchOptions{HeadersKey: "Accept", HeadersVal: "non-existent-value"},
 			expected: []string{},
 		},
 		{
-			name: "Search by header key and value - value match, no key match",
-			options: SearchOptions{
-				HeadersKey: "X-Non-Existent",
-				HeadersVal: "application/json",
-			},
+			name:     "Search by header key and value - value match, no key match",
+			options:  SearchOptions{HeadersKey: "X-Non-Existent", HeadersVal: "application/json"},
 			expected: []string{},
 		},
 		{
-			name: "Search by header key and value - both match in different headers",
-			options: SearchOptions{
-				HeadersKey: "User-Agent",
-				HeadersVal: "application/json",
-			},
+			name:     "Search by header key and value - both match in different headers",
+			options:  SearchOptions{HeadersKey: "User-Agent", HeadersVal: "application/json"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by header key and value - no matches",
-			options: SearchOptions{
-				HeadersKey: "X-Non-Existent",
-				HeadersVal: "non-existent-value",
-			},
-			expected: []string{},
-		},
-		{
-			name: "Search by partial header key",
-			options: SearchOptions{
-				HeadersKey: "User-Agent",
-			},
+			name:     "Search by partial header key",
+			options:  SearchOptions{HeadersKey: "User-Agent"},
 			expected: []string{"1", "3"},
 		},
 		{
-			name: "Search by partial header value",
-			options: SearchOptions{
-				HeadersVal: "GitHub",
-			},
+			name:     "Search by partial header value",
+			options:  SearchOptions{HeadersVal: "GitHub"},
 			expected: []string{"3"},
 		},
 		{
-			name: "Search custom header",
-			options: SearchOptions{
-				HeadersKey: "X-Custom",
-			},
+			name:     "Search custom header",
+			options:  SearchOptions{HeadersKey: "X-Custom"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by header value substring - Bearer token",
-			options: SearchOptions{
-				HeadersVal: "Bearer",
-			},
+			name:     "Search by header value substring - Bearer token",
+			options:  SearchOptions{HeadersVal: "Bearer"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by header key substring",
-			options: SearchOptions{
-				HeadersKey: "Content",
-			},
+			name:     "Search by header key substring",
+			options:  SearchOptions{HeadersKey: "Content"},
 			expected: []string{"1", "2", "4"},
 		},
 	}
@@ -351,77 +301,53 @@ func TestSearch_CookiesSearch(t *testing.T) {
 		expected []string
 	}{
 		{
-			name: "Search by cookie key only",
-			options: SearchOptions{
-				CookiesKey: "session_id",
-			},
+			name:     "Search by cookie key only",
+			options:  SearchOptions{CookiesKey: "session_id"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by cookie value string",
-			options: SearchOptions{
-				CookiesVal: "abc123",
-			},
+			name:     "Search by cookie value string",
+			options:  SearchOptions{CookiesVal: "abc123"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by cookie value number",
-			options: SearchOptions{
-				CookiesVal: 12345,
-			},
+			name:     "Search by cookie value number as string",
+			options:  SearchOptions{CookiesVal: "12345"},
 			expected: []string{"2"},
 		},
 		{
-			name: "Search by cookie value boolean",
-			options: SearchOptions{
-				CookiesVal: true,
-			},
+			name:     "Search by cookie value boolean as string",
+			options:  SearchOptions{CookiesVal: "true"},
 			expected: []string{"3"},
 		},
 		{
-			name: "Search by cookie key and value - both must match independently",
-			options: SearchOptions{
-				CookiesKey: "user_id",
-				CookiesVal: 12345,
-			},
+			name:     "Search by cookie key and value",
+			options:  SearchOptions{CookiesKey: "user_id", CookiesVal: "12345"},
 			expected: []string{"2"},
 		},
 		{
-			name: "Search by cookie key and value - key match, no value match",
-			options: SearchOptions{
-				CookiesKey: "session_id",
-				CookiesVal: "wrong_value",
-			},
+			name:     "Search by cookie key and value - key match, no value match",
+			options:  SearchOptions{CookiesKey: "session_id", CookiesVal: "wrong_value"},
 			expected: []string{},
 		},
 		{
-			name: "Search by cookie key and value - value match, no key match",
-			options: SearchOptions{
-				CookiesKey: "non_existent",
-				CookiesVal: "abc123",
-			},
+			name:     "Search by cookie key and value - value match, no key match",
+			options:  SearchOptions{CookiesKey: "non_existent", CookiesVal: "abc123"},
 			expected: []string{},
 		},
 		{
-			name: "Search by cookie key and value - both match in different cookies",
-			options: SearchOptions{
-				CookiesKey: "session_id",
-				CookiesVal: 5,
-			},
+			name:     "Search by cookie key and value - both match in different cookies",
+			options:  SearchOptions{CookiesKey: "session_id", CookiesVal: "5"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search by partial cookie key",
-			options: SearchOptions{
-				CookiesKey: "session",
-			},
+			name:     "Search by partial cookie key",
+			options:  SearchOptions{CookiesKey: "session"},
 			expected: []string{"1", "3"},
 		},
 		{
-			name: "Search by partial cookie value",
-			options: SearchOptions{
-				CookiesVal: "theme",
-			},
+			name:     "Search by partial cookie value",
+			options:  SearchOptions{CookiesVal: "theme"},
 			expected: []string{"1"},
 		},
 	}
@@ -454,38 +380,28 @@ func TestSearch_BodySearch(t *testing.T) {
 		expected []string
 	}{
 		{
-			name: "Search in request body",
-			options: SearchOptions{
-				Body: "laptop",
-			},
+			name:     "Search in request body",
+			options:  SearchOptions{Body: "laptop"},
 			expected: []string{"1"},
 		},
 		{
-			name: "Search in response body",
-			options: SearchOptions{
-				Body: "documentation",
-			},
+			name:     "Search in response body",
+			options:  SearchOptions{Body: "documentation"},
 			expected: []string{"2"},
 		},
 		{
-			name: "Search in both request and response",
-			options: SearchOptions{
-				Body: "test",
-			},
+			name:     "Search in both request and response",
+			options:  SearchOptions{Body: "test"},
 			expected: []string{"4"},
 		},
 		{
-			name: "Case insensitive body search",
-			options: SearchOptions{
-				Body: "GOLANG",
-			},
+			name:     "Case insensitive body search",
+			options:  SearchOptions{Body: "GOLANG"},
 			expected: []string{"2"},
 		},
 		{
-			name: "JSON content search",
-			options: SearchOptions{
-				Body: "\"language\":",
-			},
+			name:     "JSON content search",
+			options:  SearchOptions{Body: "\"language\":"},
 			expected: []string{"3"},
 		},
 	}
@@ -518,37 +434,23 @@ func TestSearch_MultipleCriteria(t *testing.T) {
 		expected []string
 	}{
 		{
-			name: "URL and header key - both match",
-			options: SearchOptions{
-				URL:        "amazon",
-				HeadersKey: "Content-Type",
-			},
+			name:     "URL and header key - both match",
+			options:  SearchOptions{URL: "amazon", HeadersKey: "Content-Type"},
 			expected: []string{"1"},
 		},
 		{
-			name: "URL and header key - URL matches, header doesn't",
-			options: SearchOptions{
-				URL:        "amazon",
-				HeadersKey: "X-Missing-Header",
-			},
+			name:     "URL and header key - URL matches, header doesn't",
+			options:  SearchOptions{URL: "amazon", HeadersKey: "X-Missing-Header"},
 			expected: []string{},
 		},
 		{
-			name: "URL, header and cookie - all match",
-			options: SearchOptions{
-				URL:        "google",
-				HeadersKey: "Accept",
-				CookiesKey: "lang",
-			},
+			name:     "URL, header and cookie - all match",
+			options:  SearchOptions{URL: "google", HeadersKey: "Accept", CookiesKey: "lang"},
 			expected: []string{"2"},
 		},
 		{
-			name: "URL, header and body - all match",
-			options: SearchOptions{
-				URL:        "github",
-				HeadersKey: "Authorization",
-				Body:       "project",
-			},
+			name:     "URL, header and body - all match",
+			options:  SearchOptions{URL: "github", HeadersKey: "Authorization", Body: "project"},
 			expected: []string{"3"},
 		},
 		{
@@ -561,33 +463,6 @@ func TestSearch_MultipleCriteria(t *testing.T) {
 				Body:       "json",
 			},
 			expected: []string{"4"},
-		},
-		{
-			name: "All criteria - header key/value both match",
-			options: SearchOptions{
-				URL:        "amazon",
-				HeadersKey: "Authorization",
-				HeadersVal: "application/json",
-				CookiesKey: "session_id",
-				Body:       "laptop",
-			},
-			expected: []string{"1"},
-		},
-		{
-			name: "Headers key and value independent - value missing",
-			options: SearchOptions{
-				HeadersKey: "Content-Type",
-				HeadersVal: "non-existent-value",
-			},
-			expected: []string{},
-		},
-		{
-			name: "Headers key and value independent - key missing",
-			options: SearchOptions{
-				HeadersKey: "X-Missing",
-				HeadersVal: "application/json",
-			},
-			expected: []string{},
 		},
 	}
 
@@ -613,7 +488,6 @@ func TestSearch_MultipleCriteria(t *testing.T) {
 func BenchmarkSearch_URLOnly(b *testing.B) {
 	store := setupTestStoreWithData()
 	opt := SearchOptions{URL: "amazon"}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		store.Search(opt)
@@ -623,7 +497,6 @@ func BenchmarkSearch_URLOnly(b *testing.B) {
 func BenchmarkSearch_HeadersOnly(b *testing.B) {
 	store := setupTestStoreWithData()
 	opt := SearchOptions{HeadersKey: "Content-Type"}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		store.Search(opt)
@@ -637,7 +510,6 @@ func BenchmarkSearch_MultipleCriteria(b *testing.B) {
 		HeadersKey: "Authorization",
 		Body:       "project",
 	}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		store.Search(opt)

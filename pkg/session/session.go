@@ -13,17 +13,14 @@ type InMemoryStore struct {
 	mutex        sync.RWMutex
 	maxSize      int
 	subscribers  []func()
-	mu           sync.RWMutex
 	sessionCount int
 }
 
 func NewInMemoryStore(maxSize int) *InMemoryStore {
 	return &InMemoryStore{
-		sessions:     make(map[string]*sessiondata.Session),
-		order:        make([]*sessiondata.Session, 0),
-		maxSize:      maxSize,
-		subscribers:  make([]func(), 0),
-		sessionCount: 0,
+		sessions: make(map[string]*sessiondata.Session),
+		order:    make([]*sessiondata.Session, 0),
+		maxSize:  maxSize,
 	}
 }
 
@@ -34,15 +31,12 @@ func (s *InMemoryStore) Subscribe(callback func()) {
 }
 
 func (s *InMemoryStore) notifySubscribers() {
-	subscribers := func() []func() {
-		s.mutex.RLock()
-		defer s.mutex.RUnlock()
-		result := make([]func(), len(s.subscribers))
-		copy(result, s.subscribers)
-		return result
-	}()
+	s.mutex.RLock()
+	subs := make([]func(), len(s.subscribers))
+	copy(subs, s.subscribers)
+	s.mutex.RUnlock()
 
-	for _, callback := range subscribers {
+	for _, callback := range subs {
 		go callback()
 	}
 }
@@ -59,7 +53,8 @@ func (s *InMemoryStore) Store(session *sessiondata.Session) error {
 		delete(s.sessions, oldest.ID)
 		s.order = s.order[1:]
 	}
-	s.sessionCount += 1
+
+	s.sessionCount++
 	go s.notifySubscribers()
 	return nil
 }
@@ -89,9 +84,12 @@ func (s *InMemoryStore) Clear() {
 	defer s.mutex.Unlock()
 	s.sessions = make(map[string]*sessiondata.Session)
 	s.order = make([]*sessiondata.Session, 0)
+	s.sessionCount++
 	go s.notifySubscribers()
 }
 
 func (s *InMemoryStore) SessionCount() int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 	return s.sessionCount
 }

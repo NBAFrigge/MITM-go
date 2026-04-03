@@ -13,6 +13,7 @@ import (
 	"httpDebugger/pkg/certs"
 	"httpDebugger/pkg/proxy"
 	"httpDebugger/pkg/sessiondata"
+	"httpDebugger/tui/helpers"
 
 	"github.com/atotto/clipboard"
 	key "github.com/charmbracelet/bubbles/key"
@@ -320,34 +321,27 @@ func (m *Model) updatePanelSizes() {
 	availW := m.width
 	availH := m.height - 2
 
-	safe := func(v int) int {
-		if v < 0 {
-			return 0
-		}
-		return v
-	}
-
 	if !m.showDetails {
-		m.sessionsPanel.SetSize(safe(availW-2), safe(availH-4))
+		m.sessionsPanel.SetSize(helpers.SafeInt(availW-2), helpers.SafeInt(availH-4))
 		return
 	}
 
 	sessionW := availW / 3
 	detailsW := availW - sessionW
 
-	m.sessionsPanel.SetSize(safe(sessionW-2), safe(availH-4))
+	m.sessionsPanel.SetSize(helpers.SafeInt(sessionW-2), helpers.SafeInt(availH-4))
 
 	if m.requestPanel != nil {
-		m.requestPanel.SetSize(safe(detailsW-2), safe(availH-4))
+		m.requestPanel.SetSize(helpers.SafeInt(detailsW-2), helpers.SafeInt(availH-4))
 	}
 	if m.responsePanel != nil {
-		m.responsePanel.SetSize(safe(detailsW-2), safe(availH-4))
+		m.responsePanel.SetSize(helpers.SafeInt(detailsW-2), helpers.SafeInt(availH-4))
 	}
 	if m.tlsPanel != nil {
-		m.tlsPanel.SetSize(safe(detailsW-2), safe(availH-4))
+		m.tlsPanel.SetSize(helpers.SafeInt(detailsW-2), helpers.SafeInt(availH-4))
 	}
 	if m.websocketPanel != nil {
-		m.websocketPanel.SetSize(safe(detailsW-2), safe(availH-4))
+		m.websocketPanel.SetSize(helpers.SafeInt(detailsW-2), helpers.SafeInt(availH-4))
 	}
 }
 
