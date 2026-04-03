@@ -28,3 +28,7 @@ vendor/
 .DS_Store
 Thumbs.db
 /certs/
+/logs
+/logs
+/test.sh
+/todo.md
