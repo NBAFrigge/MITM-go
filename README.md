@@ -1,43 +1,59 @@
-# MITM-go - HTTP Debugger & Proxy
+# MITM-go
 
-MITM-go is an advanced tool for intercepting, inspecting, and debugging HTTP(S) traffic in real-time. Built with a Go backend and a Vue.js frontend (via Wails), it allows for detailed analysis of communications between client and server, supporting modern protocols like HTTP/2 and WebSockets.
+Terminal-based HTTP/HTTPS debugging proxy built in Go. Intercepts, inspects, and replays traffic in real-time with TLS fingerprint extraction.
 
-## Key Features
+## Features
 
-- **HTTP/HTTPS Interception**: Acts as a Man-in-the-Middle proxy, decrypting SSL/TLS traffic on-the-fly via dynamic certificate generation.
-- **HTTP/2 Support**: Full management of HTTP/2 multiplexing, including HPACK decoding and frame analysis.
-- **TLS Fingerprint Replication**: Analysis of the original `ClientHello` to replicate the TLS signature (JA3) in upstream connections, evading detection by anti-bot systems.
-- **WebSocket Support**: Real-time interception, decoding, and visualization of WebSocket messages (text and binary).
-- **Header Ordering**: Preservation of the original order of HTTP headers (critical for fingerprinting analysis) via a custom parser.
-- **Body Analysis**: Automatic decompression (Gzip, Deflate, Zstd) and JSON formatting.
-- **Session Management**:
-  - Advanced search (URL, Header, Cookie, Body).
-  - Differential comparison (Diff) between two requests.
-  - Request replay.
-  - Export to cURL format.
+- **HTTPS Interception** — MITM proxy with dynamic certificate generation
+- **HTTP/2** — Full support including HPACK decoding and frame analysis
+- **TLS Fingerprinting** — Extracts JA3 hash, cipher suites, extensions, curves, signature algorithms from the original ClientHello
+- **WebSocket** — Real-time interception and visualization of messages
+- **Header Order Preservation** — Custom parser that maintains original header ordering
+- **Body Handling** — Automatic decompression (Gzip, Deflate, Zstd) and JSON formatting
+- **Request Replay** — Re-send captured requests through the proxy
+- **cURL Export** — Copy any session as a cURL command
+- **Regex Filtering** — Filter sessions by URL pattern
+- **Interactive TUI** — Navigable panels for sessions, request/response details, and TLS data
 
-## Build Requirements
+## Requirements
 
-- **Go**: 1.24+
-- **Node.js & NPM**: For frontend building.
-- **Wails**: CLI installed (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`).
+- Go 1.24+
 
-## Installation Instructions
+## Install
 
 ```bash
-# Download Go dependencies
 go mod tidy
-
-# Install and build the frontend
-cd frontend
-npm install
-npm run build
-cd ..
-
-# Build the desktop application
-wails build
+go build -o mitm-go .
 ```
+
+## Usage
+
+```bash
+./mitm-go
+./mitm-go -port 9090
+```
+
+Configure your client to use `http://127.0.0.1:8080` as proxy. Install `certs/httpCA.crt` as a trusted CA to intercept HTTPS.
+
+## Keybindings
+
+| Key      | Action                            |
+| -------- | --------------------------------- |
+| `Ctrl+S` | Start/stop proxy                  |
+| `Enter`  | Select session / toggle details   |
+| `Tab`    | Switch panel focus                |
+| `←→`     | Switch tab (Request/Response/TLS) |
+| `↑↓`     | Navigate / scroll                 |
+| `/`      | Search (regex filter by URL)      |
+| `r`      | Replay selected request           |
+| `c`      | Copy as cURL                      |
+| `Ctrl+D` | Clear all sessions                |
+| `Ctrl+R` | Refresh sessions                  |
+| `F1`     | Help                              |
+| `F2`     | Toggle verbose logging            |
+| `Esc`    | Close details / clear filter      |
+| `q`      | Quit                              |
 
 ## License
 
-Distributed under the MIT License.
+MIT
