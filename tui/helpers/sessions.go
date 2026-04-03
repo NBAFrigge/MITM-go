@@ -208,10 +208,10 @@ func GroupSessionsByHost(sessions []*sessiondata.Session) map[string][]*sessiond
 }
 
 func extractHost(url string) string {
-	if strings.HasPrefix(url, "https:
-		url = strings.TrimPrefix(url, "https:
-	} else if strings.HasPrefix(url, "http:
-		url = strings.TrimPrefix(url, "http:
+	if strings.HasPrefix(url, "https://") {
+		url = strings.TrimPrefix(url, "https://")
+	} else if strings.HasPrefix(url, "http://") {
+		url = strings.TrimPrefix(url, "http://")
 	}
 
 	if idx := strings.Index(url, "/"); idx != -1 {

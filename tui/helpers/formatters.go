@@ -105,12 +105,11 @@ func FormatURL(url string, maxLen int) string {
 	}
 
 	display := url
-	if strings.HasPrefix(url, "https:
-		display = strings.TrimPrefix(url, "https:
-	} else if strings.HasPrefix(url, "http:
-		display = strings.TrimPrefix(url, "http:
+	if strings.HasPrefix(url, "https://") {
+		display = strings.TrimPrefix(url, "https://")
+	} else if strings.HasPrefix(url, "http://") {
+		display = strings.TrimPrefix(url, "http://")
 	}
-
 	return TruncateString(display, maxLen)
 }
 

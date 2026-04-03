@@ -318,7 +318,7 @@ func extractPath(rawURL string) string {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 
-		if idx := strings.Index(rawURL, ":
+		if idx := strings.Index(rawURL, "://"); idx != -1 {
 			rawURL = rawURL[idx+3:]
 		}
 		if idx := strings.Index(rawURL, "/"); idx != -1 {
