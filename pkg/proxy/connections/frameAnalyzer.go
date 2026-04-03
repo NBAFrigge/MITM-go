@@ -3,6 +3,7 @@ package connections
 import (
 	"bytes"
 	"net"
+	"strings"
 	"sync"
 
 	"httpDebugger/pkg/proxy/interfaces"
@@ -225,6 +226,10 @@ func (w *HTTP2FrameWrapper) processHeadersFrame(streamID uint32, flags byte, pay
 	}
 
 	for _, hf := range headers {
+		// skip pseudo-header
+		if strings.HasPrefix(hf.Name, ":") {
+			continue
+		}
 		w.streams[streamID].Headers.Put(hf.Name, hf.Value)
 	}
 

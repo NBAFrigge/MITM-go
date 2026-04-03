@@ -35,18 +35,29 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.searchInput.Blur()
 				m.filterRegex = m.searchInput.Value()
 				m.applyFilter()
-				return m, nil
+				return m, m.tickCmd()
 			case key.Matches(msg, key.NewBinding(key.WithKeys("esc"))):
 				m.isSearching = false
 				m.searchInput.Blur()
 				m.searchInput.SetValue(m.filterRegex)
-				return m, nil
+				return m, m.tickCmd()
 			}
+
+			var cmd tea.Cmd
+			m.searchInput, cmd = m.searchInput.Update(msg)
+			return m, cmd
+
+		case SessionsUpdatedMsg:
+			m.sessions = msg.Sessions
+			m.sessionCount = m.sessionStore.SessionCount()
+			m.applyFilter()
+			return m, m.tickCmd()
+
+		case TickMsg:
+			return m, m.tickCmd()
 		}
 
-		var cmd tea.Cmd
-		m.searchInput, cmd = m.searchInput.Update(msg)
-		return m, cmd
+		return m, nil
 	}
 
 	switch msg := msg.(type) {
@@ -57,7 +68,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case SessionsUpdatedMsg:
 		m.sessions = msg.Sessions
-		m.sessionCount = len(msg.Sessions)
+		m.sessionCount = m.sessionStore.SessionCount()
 		m.applyFilter()
 
 		if m.showDetails && m.selectedSession != nil {
