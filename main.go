@@ -1,35 +1,21 @@
 package main
 
 import (
-	"embed"
+	"fmt"
+	"os"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	tui "httpDebugger/tui"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
-//go:embed all:frontend/dist
-var assets embed.FS
-
 func main() {
-	app := NewApp()
+	model := tui.NewModel()
 
-	err := wails.Run(&options.App{
-		Title:  "HTTP Debugger",
-		Width:  1400,
-		Height: 900,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.OnStartup,
-		OnShutdown:       app.OnShutdown,
-		Bind: []interface{}{
-			app,
-		},
-	})
+	p := tea.NewProgram(&model, tea.WithAltScreen())
 
-	if err != nil {
-		println("Error:", err.Error())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error running program: %v", err)
+		os.Exit(1)
 	}
 }
