@@ -211,6 +211,7 @@ func (s *Session) Replay(port int) error {
 	if err != nil {
 		return fmt.Errorf("error replaying request: %w", err)
 	}
+	io.Copy(io.Discard, resp.Body)
 	defer resp.Body.Close()
 
 	return nil
