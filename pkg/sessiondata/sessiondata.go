@@ -36,9 +36,16 @@ func NewSessionData(r *http.Request, bodyBytes []byte, headers *sortedMap.Sorted
 		cookies[cookie.Name] = cookie.Value
 	}
 
+	port := r.URL.Port()
+	if port == "443" || port == "80" || port == "" {
+		r.URL.Host = r.URL.Hostname()
+	}
+
+	requestURL := r.URL.String()
+
 	requestData := &RequestData{
 		Method:      r.Method,
-		URL:         r.URL.String(),
+		URL:         requestURL,
 		Headers:     headers,
 		Body:        string(bodyBytes),
 		Cookies:     cookies,
