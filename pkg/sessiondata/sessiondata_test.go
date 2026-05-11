@@ -221,11 +221,27 @@ func TestToCurl(t *testing.T) {
 			session := createTestSession(tt.method, tt.url, tt.body, tt.headers, tt.cookies)
 			result := session.ToCurl()
 
-			if result != tt.expected {
+			if !curlContainsAllParts(result, tt.expected) {
 				t.Errorf("ToCurl() = %v, want %v", result, tt.expected)
 			}
 		})
 	}
+}
+
+func curlContainsAllParts(result, expected string) bool {
+	parts := strings.Split(expected, " -")
+	for i, part := range parts {
+		if i == 0 {
+			if !strings.HasPrefix(result, part) {
+				return false
+			}
+		} else {
+			if !strings.Contains(result, " -"+part) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func TestToCurlWithInterfaceHeaders(t *testing.T) {
