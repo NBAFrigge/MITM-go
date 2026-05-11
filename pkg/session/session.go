@@ -84,7 +84,7 @@ func (s *InMemoryStore) Clear() {
 	defer s.mutex.Unlock()
 	s.sessions = make(map[string]*sessiondata.Session)
 	s.order = make([]*sessiondata.Session, 0)
-	s.sessionCount++
+	s.sessionCount = 0
 	go s.notifySubscribers()
 }
 

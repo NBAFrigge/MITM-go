@@ -126,7 +126,7 @@ func (h *MITMHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	cert, err := h.certsCache.GetHostCert(hostWithoutPort, h.config.CACert)
 	if err != nil {
 		h.config.Logger.LogError(err, "failed to generate certificate for host: "+r.Host)
-		http.Error(w, "Certificate Error", http.StatusInternalServerError)
+		clientConn.Write([]byte("HTTP/1.1 500 Certificate Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"))
 		return
 	}
 

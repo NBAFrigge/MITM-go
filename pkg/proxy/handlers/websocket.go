@@ -69,8 +69,7 @@ func (h *WebSocketHandler) Handle(r *http.Request, session *sessiondata.Session,
 	var backendConn net.Conn
 	var err error
 
-	// Parse host and port
-	_, port, parseErr := net.SplitHostPort(targetAddr)
+	host, port, parseErr := net.SplitHostPort(targetAddr)
 	if parseErr != nil {
 		h.config.Logger.LogError(parseErr, "failed to parse target address")
 		session.WebSocket.State = sessiondata.WSFailed
@@ -81,10 +80,9 @@ func (h *WebSocketHandler) Handle(r *http.Request, session *sessiondata.Session,
 
 	useTLS := port == "443"
 
-	// Establish connection to the backend server
 	if useTLS {
 		backendConn, err = tls.Dial("tcp", targetAddr, &tls.Config{
-			ServerName: r.Host,
+			ServerName: host,
 		})
 	} else {
 		backendConn, err = net.Dial("tcp", targetAddr)
@@ -163,6 +161,7 @@ func (h *WebSocketHandler) Handle(r *http.Request, session *sessiondata.Session,
 			errChan <- err
 		}()
 
+		<-errChan
 		<-errChan
 
 		// Update session state to closed
@@ -280,7 +279,6 @@ func (h *WebSocketHandler) forwardWebSocketFrames(from io.Reader, to io.Writer, 
 		// Store the message in the session
 		h.addMessageToSession(session, msg)
 
-		// Handle control frames and forwarding
 		switch opcode {
 		case 0x8:
 			closeCode := sessiondata.CloseNoStatusReceived
@@ -296,40 +294,53 @@ func (h *WebSocketHandler) forwardWebSocketFrames(from io.Reader, to io.Writer, 
 			session.WebSocket.CloseCode = closeCode
 			session.WebSocket.CloseReason = closeReason
 
-			h.forwardRawFrame(to, header, maskKey, originalPayload, direction)
+			if err := h.forwardRawFrame(to, header, maskKey, originalPayload, direction); err != nil {
+				h.config.Logger.LogError(err, "forwarding close frame")
+			}
 			return nil
 
 		default:
-			h.forwardRawFrame(to, header, maskKey, originalPayload, direction)
+			if err := h.forwardRawFrame(to, header, maskKey, originalPayload, direction); err != nil {
+				return err
+			}
 		}
 	}
 }
 
 // forwardRawFrame writes the raw WebSocket frame to the destination, applying masking if necessary
-func (h *WebSocketHandler) forwardRawFrame(to io.Writer, header []byte, maskKey []byte, payload []byte, direction sessiondata.MessageDirection) {
-	// Write the frame header
-	to.Write(header)
+func (h *WebSocketHandler) forwardRawFrame(to io.Writer, header []byte, maskKey []byte, payload []byte, direction sessiondata.MessageDirection) error {
+	if _, err := to.Write(header); err != nil {
+		return err
+	}
 
-	// Write the mask key and payload
 	if direction == sessiondata.Outbound {
 		if len(maskKey) == 0 {
 			maskKey = make([]byte, 4)
 			rand.Read(maskKey)
-			to.Write(maskKey)
-
+			if _, err := to.Write(maskKey); err != nil {
+				return err
+			}
 			maskedPayload := make([]byte, len(payload))
 			for i := range payload {
 				maskedPayload[i] = payload[i] ^ maskKey[i%4]
 			}
-			to.Write(maskedPayload)
+			if _, err := to.Write(maskedPayload); err != nil {
+				return err
+			}
 		} else {
-			to.Write(maskKey)
-			to.Write(payload)
+			if _, err := to.Write(maskKey); err != nil {
+				return err
+			}
+			if _, err := to.Write(payload); err != nil {
+				return err
+			}
 		}
 	} else {
-		// Inbound messages are not masked
-		to.Write(payload)
+		if _, err := to.Write(payload); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // addMessageToSession updates the session with the new WebSocket message and updates statistics

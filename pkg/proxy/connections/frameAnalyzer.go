@@ -35,19 +35,13 @@ var frameBufferPool = sync.Pool{
 	},
 }
 
-var hpackDecoderPool = sync.Pool{
-	New: func() interface{} {
-		return hpack.NewDecoder(4096, nil)
-	},
-}
-
 func NewHTTP2FrameWrapper(conn net.Conn, logger interfaces.Logger) *HTTP2FrameWrapper {
 	return &HTTP2FrameWrapper{
 		Conn:         conn,
 		logger:       logger,
 		buffer:       frameBufferPool.Get().([]byte),
 		offset:       0,
-		decoder:      hpackDecoderPool.Get().(*hpack.Decoder),
+		decoder:      hpack.NewDecoder(4096, nil),
 		http2Started: false,
 		streams:      make(map[uint32]*HTTP2StreamData),
 	}
@@ -206,10 +200,7 @@ func (w *HTTP2FrameWrapper) processHeadersFrame(streamID uint32, flags byte, pay
 		return nil
 	}
 
-	tempDecoder := hpackDecoderPool.Get().(*hpack.Decoder)
-	defer hpackDecoderPool.Put(tempDecoder)
-
-	headers, err := tempDecoder.DecodeFull(headerBlock)
+	headers, err := w.decoder.DecodeFull(headerBlock)
 	if err != nil {
 		w.logger.LogError(err, "Error decoding HPACK headers")
 		return nil
@@ -287,10 +278,7 @@ func (w *HTTP2FrameWrapper) processSettingsFrame(flags byte, payload []byte) {
 
 // process CONTINUATION frame to decode additional headers
 func (w *HTTP2FrameWrapper) processContinuationFrame(streamID uint32, flags byte, payload []byte) *sortedMap.SortedMap {
-	tempDecoder := hpackDecoderPool.Get().(*hpack.Decoder)
-	defer hpackDecoderPool.Put(tempDecoder)
-
-	headers, err := tempDecoder.DecodeFull(payload)
+	headers, err := w.decoder.DecodeFull(payload)
 	if err != nil {
 		w.logger.LogError(err, "Error decoding CONTINUATION headers")
 		return nil
@@ -357,9 +345,7 @@ func (w *HTTP2FrameWrapper) Close() error {
 		frameBufferPool.Put(w.buffer[:0])
 	}
 
-	if w.decoder != nil {
-		hpackDecoderPool.Put(w.decoder)
-	}
+	w.decoder = nil
 
 	return w.Conn.Close()
 }

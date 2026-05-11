@@ -133,5 +133,10 @@ func (l *SingleConnListener) Close() error {
 }
 
 func (l *SingleConnListener) Addr() net.Addr {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.conn == nil {
+		return &net.TCPAddr{}
+	}
 	return l.conn.LocalAddr()
 }
